@@ -1,0 +1,11 @@
+Package: analisisnumerico
+Type: Package
+Title: Metodos de Analisis Numerico
+Version: 0.2.0
+Author: Equipo de estudio [aut]
+Maintainer: Equipo de estudio <autor@example.invalid>
+Description: Implementaciones didacticas de raices, autovalores, potencia,
+    QR y Householder usando R base, con ayuda individual y ejemplos.
+License: GPL-3
+Encoding: UTF-8
+Depends: R (>= 4.0.0)
