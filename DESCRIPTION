@@ -1,7 +1,7 @@
 Package: analisisnumerico
 Type: Package
-Title: Metodos de Analisis Numerico
-Version: 0.2.0
+Title: Biblioteca de análisis numérico
+Version: 1.7.8
 Author: Equipo de estudio [aut]
 Maintainer: Equipo de estudio <autor@example.invalid>
 Description: Implementaciones didacticas de raices, autovalores, potencia,
