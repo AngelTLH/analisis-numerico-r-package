@@ -6,7 +6,7 @@ Biblioteca de análisis numérico implementada con R base.
 
 ```r
 install.packages("remotes")
-remotes::install_github("USUARIO/analisis-numerico-r-package")
+remotes::install_github("AngelTLH/analisis-numerico-r-package")
 library(analisisnumerico)
 ```
 
