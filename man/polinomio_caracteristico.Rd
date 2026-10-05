@@ -9,7 +9,7 @@ polinomio_caracteristico(A)
 \item{A}{Matriz numerica cuadrada finita no vacia, real o compleja.}
 }
 \value{Lista: coeficientes (de lambda^n a lambda^0, el primero igual a 1), polinomio (texto) y raices (ordenadas por modulo decreciente).}
-\details{Usa el algoritmo de Faddeev-LeVerrier, que solo requiere productos de matrices y trazas. Si A tiene entradas enteras los coeficientes se redondean a enteros. det(A-lambda*I) = (-1)^n p(lambda), por lo que ambas ecuaciones tienen las mismas raices. Las raices se obtienen con polyroot; las raices multiples se calculan con menor precision que los valores de eigen.}
+\details{Usa Faddeev-LeVerrier, con productos de matrices y trazas. Si A tiene entradas enteras y los coeficientes calculados son menores que 2^52 en modulo, se redondean a enteros. det(A-lambda*I) = (-1)^n p(lambda). Las raices se obtienen con polyroot y se conservan sin anular valores o componentes imaginarias pequenas. Las raices multiples pueden tener menor precision y partes imaginarias espurias; para el espectro numerico se recomienda valores_vectores_propios. El calculo de coeficientes puede perder precision por cancelacion en matrices mal escaladas y no es una herramienta simbolica. El desbordamiento produce Error.}
 \examples{
 A <- matrix(c(4,1,2,3),2,byrow=TRUE)
 polinomio_caracteristico(A)

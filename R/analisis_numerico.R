@@ -61,7 +61,7 @@
 .vector_texto <- function(x) paste0("(", paste(format(x, digits = 6), collapse = ", "), ")")
 
 .limpiar <- function(x) {
-  x <- zapsmall(x, digits = 12)
+  # No redondear resultados: una componente pequena puede ser significativa.
   if (is.complex(x) && all(Im(x) == 0)) x <- Re(x)
   x
 }
@@ -176,6 +176,7 @@ regula_falsi <- function(f, a, b, tol = 1e-6, max_iter = 100, mostrar = FALSE) {
                           c = numeric(), f_c = numeric(), error = numeric())
   for (k in seq_len(max_iter)) {
     escala <- max(abs(fa), abs(fb))
+    # Equivale a c = (a*fb - b*fa)/(fb-fa), evitando productos enormes.
     peso <- -(fa / escala) / (fb / escala - fa / escala)
     c <- (1 - peso) * a + peso * b
     fc <- .evaluar(f, c)
@@ -257,6 +258,121 @@ punto_fijo <- function(g, x0, tol = 1e-6, max_iter = 100, mostrar = FALSE) {
   list(raiz = x0, iter = max_iter, error = error, convergencia = FALSE, historial = historial)
 }
 
+# Secante: se conservan las dos evaluaciones previas -----------------------
+.paso_secante <- function(x0, x1, f0, f1) {
+  # Formula de clase: x2 = x1 - f1*(x1-x0)/(f1-f0).
+  escala <- max(abs(f0), abs(f1))
+  denominador <- if (escala == 0) 0 else f1 / escala - f0 / escala
+  if (abs(denominador) <= .Machine$double.eps)
+    stop("Secante: division por cero o valores de f indistinguibles.", call. = FALSE)
+  x2 <- x1 - (f1 / escala) / denominador * (x1 - x0)
+  .escalar(x2, "La nueva aproximacion de secante")
+  x2
+}
+
+secante <- function(f, x0, x1, tol = 1e-8, max_iter = 100, mostrar = FALSE) {
+  if (!is.function(f)) stop("f debe ser una funcion.", call. = FALSE)
+  .escalar(x0, "x0")
+  .escalar(x1, "x1")
+  .iteraciones(tol, max_iter)
+  .mostrar(mostrar)
+  if (x0 == x1) stop("Secante requiere x0 y x1 distintos.", call. = FALSE)
+  f0 <- .evaluar(f, x0)
+  f1 <- .evaluar(f, x1)
+  historial <- data.frame(iter = integer(), x0 = numeric(), x1 = numeric(),
+                          x2 = numeric(), f_x2 = numeric(), error = numeric())
+  if (f0 == 0 || f1 == 0)
+    return(list(raiz = if (f1 == 0) x1 else x0, iter = 0L, error = 0,
+                residuo = 0, convergencia = TRUE, historial = historial))
+  for (k in seq_len(max_iter)) {
+    x2 <- .paso_secante(x0, x1, f0, f1)
+    f2 <- .evaluar(f, x2)
+    error <- abs(x2 - x1)
+    historial <- rbind(historial, data.frame(iter = k, x0 = x0, x1 = x1,
+                                             x2 = x2, f_x2 = f2, error = error))
+    .registrar(mostrar, sprintf(paste0("Iteracion %d: x0 = %.10g, x1 = %.10g, ",
+                                      "x2 = %.10g, f(x2) = %.10g, error = %.10g"),
+                                k, x0, x1, x2, f2, error))
+    if (x2 == x1 && f2 != 0 && abs(f2) >= tol)
+      stop("Secante se estanco por precision numerica sin un residuo pequeno.", call. = FALSE)
+    if (f2 == 0 || error < tol)
+      return(list(raiz = x2, iter = k, error = error, residuo = abs(f2),
+                  convergencia = TRUE, historial = historial))
+    x0 <- x1
+    f0 <- f1
+    x1 <- x2
+    f1 <- f2
+  }
+  .sin_convergencia("Secante", mostrar)
+  list(raiz = x2, iter = max_iter, error = error, residuo = abs(f2),
+       convergencia = FALSE, historial = historial)
+}
+
+grafico_secante <- function(f = function(x) x^3 - x - 1, x0 = 0.5, x1 = 2,
+                             iteraciones = 6, xlim = c(-1, 3), ylim = c(-4, 10),
+                             n = 500) {
+  if (!is.function(f)) stop("f debe ser una funcion.", call. = FALSE)
+  .escalar(x0, "x0")
+  .escalar(x1, "x1")
+  .iteraciones(1, iteraciones)
+  .iteraciones(1, n)
+  if (n < 2) stop("n debe ser al menos 2.", call. = FALSE)
+  for (nombre in c("xlim", "ylim")) {
+    limites <- if (nombre == "xlim") xlim else ylim
+    if (!.es_real(limites) || length(limites) != 2L ||
+        any(!is.finite(limites)) || limites[1] >= limites[2])
+      stop(paste(nombre, "debe contener dos reales finitos crecientes."), call. = FALSE)
+  }
+  if (x0 == x1) stop("Secante requiere x0 y x1 distintos.", call. = FALSE)
+  puntos <- c(x0, x1)
+  valores <- c(.evaluar(f, x0), .evaluar(f, x1))
+  if (any(valores == 0))
+    stop("Para mostrar la evolucion, use dos puntos iniciales que no sean raices.", call. = FALSE)
+  historial <- data.frame(iter = integer(), x0 = numeric(), x1 = numeric(),
+                          x2 = numeric(), f_x2 = numeric(), error = numeric())
+  for (k in seq_len(iteraciones)) {
+    x2 <- .paso_secante(puntos[k], puntos[k + 1L], valores[k], valores[k + 1L])
+    f2 <- .evaluar(f, x2)
+    error <- abs(x2 - puntos[k + 1L])
+    if (x2 == puntos[k + 1L] && f2 != 0)
+      stop("Secante se estanco por precision numerica.", call. = FALSE)
+    historial <- rbind(historial, data.frame(iter = k, x0 = puntos[k],
+                                             x1 = puntos[k + 1L], x2 = x2,
+                                             f_x2 = f2, error = error))
+    puntos <- c(puntos, x2)
+    valores <- c(valores, f2)
+    if (f2 == 0) break
+  }
+  # Evaluacion escalar: tambien admite funciones que no esten vectorizadas.
+  malla <- seq(xlim[1], xlim[2], length.out = n)
+  curva <- vapply(malla, function(x) .evaluar(f, x), numeric(1))
+  paneles <- nrow(historial)
+  anteriores <- graphics::par(no.readonly = TRUE)
+  on.exit(graphics::par(anteriores), add = TRUE)
+  graphics::par(mfrow = c(ceiling(paneles / 3), min(3, paneles)),
+                mar = c(2.5, 2.5, 2, 0.5), oma = c(0, 0, 3, 0), cex = 1, las = 1)
+  for (k in seq_len(paneles)) {
+    graphics::plot(malla, curva, type = "n", xlim = xlim, ylim = ylim,
+                   xaxs = "i", yaxs = "i", xlab = "", ylab = "",
+                   main = paste("Iteracion", k))
+    graphics::grid(col = "grey85", lty = 3)
+    graphics::abline(h = 0, col = "grey40")
+    graphics::lines(malla, curva, col = "blue", lwd = 1.2)
+    for (j in seq_len(k)) {
+      # Dos puntos de la curva y el corte de su recta con el eje horizontal.
+      graphics::lines(puntos[j:(j + 2L)], c(valores[j:(j + 1L)], 0),
+                      col = "red", lty = 2)
+    }
+    graphics::points(puntos[seq_len(k + 1L)], valores[seq_len(k + 1L)],
+                     col = "red", pch = 19, cex = 0.8)
+  }
+  graphics::mtext("Evolucion del metodo de la secante", outer = TRUE, line = 1.5)
+  if (missing(f))
+    graphics::mtext(expression(f(x) == x^3 - x - 1), outer = TRUE, line = 0.2)
+  invisible(list(historial = historial,
+                 puntos = data.frame(x = puntos, f_x = valores)))
+}
+
 # Valores y vectores propios ----------------------------------------------
 valores_vectores_propios <- function(A, escala = c("l2", "pivote", "max")) {
   .matriz(A)
@@ -276,9 +392,9 @@ polinomio_caracteristico <- function(A) {
   }
   if (.es_real(A) && all(A == round(A)) && max(abs(coeficientes)) < 2^52)
     coeficientes <- round(coeficientes)
+  if (any(!is.finite(coeficientes)))
+    stop("El polinomio caracteristico excede la precision numerica disponible.", call. = FALSE)
   raices <- polyroot(rev(coeficientes))
-  reales <- abs(Im(raices)) <= 1e-10 * pmax(1, Mod(raices))
-  raices[reales] <- Re(raices[reales])
   raices <- .limpiar(raices[order(-Mod(raices))])
   list(coeficientes = coeficientes, polinomio = .texto_polinomio(coeficientes), raices = raices)
 }
@@ -290,7 +406,10 @@ espacio_propio <- function(A, lambda, tol = 1e-8, escala = c("pivote", "max", "l
   .tolerancia(tol)
   escala <- match.arg(escala)
   n <- nrow(A)
-  descomp <- svd(A - lambda * diag(n), nu = 0, nv = n)
+  # Escalar juntos A y lambda conserva el nucleo y hace relativa la tolerancia.
+  referencia <- max(Mod(A), Mod(lambda))
+  if (referencia == 0) referencia <- 1
+  descomp <- svd(A / referencia - (lambda / referencia) * diag(n), nu = 0, nv = n)
   rango <- sum(descomp$d > tol * max(1, descomp$d))
   if (rango == n)
     stop("lambda no es valor propio de A con esta tolerancia.", call. = FALSE)
@@ -304,7 +423,10 @@ multiplicidad_espectral <- function(A, tol = 1e-6, tol_valores = 1e-6) {
   .tolerancia(tol)
   .tolerancia(tol_valores, "tol_valores")
   n <- nrow(A)
-  valores <- eigen(A, only.values = TRUE)$values
+  referencia <- max(Mod(A))
+  if (referencia == 0) referencia <- 1
+  B <- A / referencia
+  valores <- eigen(B, only.values = TRUE)$values
   grupo <- seq_len(n)
   for (i in seq_len(n)) for (j in seq_len(n)) {
     if (Mod(valores[i] - valores[j]) <= tol_valores * max(1, Mod(valores[i]), Mod(valores[j])))
@@ -316,10 +438,10 @@ multiplicidad_espectral <- function(A, tol = 1e-6, tol_valores = 1e-6) {
     lambda <- mean(valores[grupo == g])
     if (is.complex(lambda) && abs(Im(lambda)) <= tol_valores * max(1, Mod(lambda)))
       lambda <- Re(lambda)
-    d <- svd(A - lambda * diag(n))$d
+    d <- svd(B - lambda * diag(n))$d
     geometrica <- n - sum(d > tol * max(1, max(d)))
     salida[[length(salida) + 1]] <- data.frame(
-      valor = lambda, algebraica = algebraica, geometrica = geometrica,
+      valor = lambda * referencia, algebraica = algebraica, geometrica = geometrica,
       defectivo = geometrica < algebraica)
   }
   do.call(rbind, salida)
@@ -447,7 +569,7 @@ reflector_householder <- function(x, signo = c("+", "-")) {
     v[1] <- -s * sum(v[-1]^2) / (abs(v[1]) + norma)
   }
   if (all(v == 0)) return(list(v = numeric(n), H = diag(n)))
-  v <- v / sqrt(sum(v^2))
+  v <- .normalizar(v)
   list(v = v, H = diag(n) - 2 * v %*% t(v))
 }
 
@@ -456,14 +578,12 @@ householder_qr <- function(A, signo = c("-", "+"), mostrar = FALSE) {
   signo <- match.arg(signo)
   .mostrar(mostrar)
   m <- nrow(A)
-  escala <- max(1, max(abs(A)))
   R <- A
   Q <- diag(m)
   pasos <- list()
   for (k in seq_len(min(m - 1, ncol(A)))) {
     indices <- k:m
     x <- R[indices, k]
-    x[abs(x) < 1e-14 * escala] <- 0
     ref <- reflector_householder(x, signo)
     H <- diag(m)
     H[indices, indices] <- ref$H
@@ -491,8 +611,9 @@ householder_reduction <- function(A, tol = 1e-10, signo = c("+", "-")) {
   .matriz(A, real = TRUE)
   .tolerancia(tol)
   signo <- match.arg(signo)
-  escala <- max(1, max(abs(A)))
-  simetrica <- max(abs(A - t(A))) / escala <= tol
+  escala <- max(abs(A))
+  if (escala == 0) escala <- 1
+  simetrica <- max(abs(A / escala - t(A / escala))) <= tol
   n <- nrow(A)
   T <- A
   Q <- diag(n)
@@ -500,7 +621,6 @@ householder_reduction <- function(A, tol = 1e-10, signo = c("+", "-")) {
     for (k in seq_len(n - 2)) {
       indices <- (k + 1):n
       x <- T[indices, k]
-      x[abs(x) < 1e-14 * escala] <- 0
       ref <- reflector_householder(x, signo)
       H <- diag(n)
       H[indices, indices] <- ref$H

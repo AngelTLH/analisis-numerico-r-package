@@ -7,7 +7,7 @@ householder_reduction(A, tol = 1e-10, signo = c("+", "-"))
 }
 \arguments{
 \item{A}{Matriz real cuadrada finita no vacia.}
-\item{tol}{Tolerancia real finita positiva para decidir si A es simetrica, relativa a max(1,max(abs(A))).}
+\item{tol}{Tolerancia positiva para decidir si A es simetrica, relativa a max(abs(A)); si A es nula se usa escala 1.}
 \item{signo}{Convencion del reflector; vea \code{\link{reflector_householder}}.}
 }
 \value{Lista: T, Q y forma ("tridiagonal" o "Hessenberg"); T = t(Q) \%*\% A \%*\% Q.}

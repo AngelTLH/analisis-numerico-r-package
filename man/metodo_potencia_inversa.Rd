@@ -8,17 +8,16 @@ metodo_potencia_inversa(A, x0 = NULL, desplazamiento = 0,
 }
 \arguments{
 \item{A}{Matriz numerica finita no vacia; consulte las restricciones en Detalles.}
-\item{x0}{Punto inicial real en punto fijo; vector real no nulo en potencia. NULL en potencia usa un vector de unos.}
+\item{x0}{Vector real finito no nulo de longitud nrow(A); NULL usa un vector de unos.}
 \item{desplazamiento}{Escalar real finito mu que define A-mu*I.}
 \item{tol}{Tolerancia real finita positiva. Su significado se explica en Valor y Detalles.}
 \item{max_iter}{Limite entero positivo de iteraciones; puede detenerse antes si cumple la tolerancia.}
 \item{mostrar}{Logico. TRUE imprime los pasos; FALSE mantiene silencio. Consulte el comportamiento al agotar iteraciones en Detalles.}
 }
-\value{Lista: valor, vector, iter, error (residuo absoluto del par).}
-\details{A debe ser real y A-mu*I numericamente invertible. Utiliza solve de R base. Con mu=0 busca el menor modulo bajo los supuestos de convergencia y un inicio apropiado. Con mostrar=TRUE se detiene igualmente al cumplir tol; no obliga a ejecutar max_iter pasos. Al agotar el limite retorna la ultima aproximacion con convergencia=FALSE; con mostrar=FALSE emite Error. Las salidas exitosas actuales no incluyen el campo convergencia. Los errores de entradas siguen deteniendo la llamada en ambos modos. Imprime valor y residuo por paso; no devuelve historial.}
+\value{Lista: valor (Rayleigh respecto de A), vector, iter, error (residuo absoluto del par), convergencia e historial. El historial contiene iter, componentes de y y x, valor y error.}
+\details{A debe ser real cuadrada y A-mu*I numericamente invertible. Resuelve (A-mu*I)y=x con solve de R base y normaliza y. Con mu=0 busca el menor modulo bajo los supuestos de convergencia y un inicio apropiado. Un residuo pequeno no certifica que sea el par mas cercano al desplazamiento si el inicio carece de la componente necesaria. Con mostrar=TRUE imprime y, x, valor y residuo; se detiene igualmente al cumplir tol. Al agotar max_iter, mostrar=TRUE advierte y retorna convergencia=FALSE; mostrar=FALSE produce Error. Los resultados que cumplen el criterio incluyen convergencia=TRUE y el historial esta disponible en ambos modos.}
 \examples{
 A <- matrix(c(4,1,2,3),2,byrow=TRUE)
 metodo_potencia_inversa(A, c(1,0))
 }
 \seealso{\code{\link{analisisnumerico-package}}}
-

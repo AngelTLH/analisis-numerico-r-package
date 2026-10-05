@@ -9,8 +9,8 @@ descomposicion_qr(A, signo = c("-", "+"))
 \item{A}{Matriz real finita no vacia; puede ser rectangular.}
 \item{signo}{Convencion del reflector; vea \code{\link{reflector_householder}}. Con "-" la diagonal de R conserva el signo del pivote de cada paso.}
 }
-\value{Lista: Q ortogonal completa (m x m) y R triangular superior o trapezoidal (m x n), con Q \%*\% R = A.}
-\details{Equivale a householder_qr sin el registro de pasos. Las columnas no se permutan, por lo que la identidad se cumple con A en su orden original, incluso si A tiene rango deficiente.}
+\value{Lista: Q ortogonal completa (m x m), R triangular superior o trapezoidal (m x n) y pivote = seq_len(ncol(A)), conservado por compatibilidad. Q \%*\% R = A salvo redondeo.}
+\details{Usa householder_qr y devuelve solamente Q, R y el pivote identidad. Las columnas no se permutan, incluso si A tiene rango deficiente.}
 \examples{
 A <- matrix(c(1,-1,4, 1,4,-2, 1,4,2, 1,-1,0), 4, byrow=TRUE)
 r <- descomposicion_qr(A)

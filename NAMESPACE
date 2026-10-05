@@ -1,6 +1,8 @@
 export(regula_falsi)
 export(biseccion)
 export(punto_fijo)
+export(secante)
+export(grafico_secante)
 export(cociente_rayleigh)
 export(metodo_potencia)
 export(metodo_potencia_inversa)

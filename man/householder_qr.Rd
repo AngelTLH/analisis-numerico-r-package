@@ -11,7 +11,7 @@ householder_qr(A, signo = c("-", "+"), mostrar = FALSE)
 \item{mostrar}{Logico. TRUE imprime v, H_k y A(k) en cada paso.}
 }
 \value{Lista: Q = H_1 H_2 ... H_k ortogonal (m x m), R triangular superior (m x n) y pasos, una lista con v, H y A (matriz tras el paso) para cada reflector aplicado.}
-\details{Realiza min(m-1, n) pasos. En el paso k se refleja la columna k desde la fila k; las entradas bajo la diagonal se fijan en cero y los restos de redondeo menores que 1e-14 por la escala de A se tratan como cero antes de construir el reflector. Si la subcolumna ya es multiplo de e1 y signo es "-", el reflector es la identidad. No se permutan columnas: Q \%*\% R = A.}
+\details{Realiza min(m-1, n) pasos. En el paso k se refleja la columna k desde la fila k y solo las entradas que se anulan por la transformacion se fijan en cero. No se descartan componentes pequenas antes de construir el reflector. Si la subcolumna ya es multiplo de e1 y signo es "-", el reflector es la identidad. No se permutan columnas: Q \%*\% R = A salvo redondeo.}
 \examples{
 A <- matrix(c(1,-1,4, 1,4,-2, 1,4,2, 1,-1,0), 4, byrow=TRUE)
 r <- householder_qr(A, mostrar=TRUE)
